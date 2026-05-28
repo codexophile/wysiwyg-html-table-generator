@@ -53,16 +53,19 @@
       <div class="sep"></div>
       <div class="toolbar-group">
         <select class="tb-select" id="sel-align" title="Text align">
+          <option value="">Unset</option>
           <option value="left">⬛ Left</option>
           <option value="center">⬜ Center</option>
           <option value="right">▪ Right</option>
         </select>
         <select class="tb-select" id="sel-valign" title="Vertical align">
+          <option value="">Unset</option>
           <option value="top">Top</option>
           <option value="middle">Middle</option>
           <option value="bottom">Bottom</option>
         </select>
         <select class="tb-select" id="sel-fontsize" title="Font size">
+          <option value="">Unset</option>
           <option>12px</option>
           <option selected>14px</option>
           <option>16px</option>
@@ -81,10 +84,13 @@
       <div class="toolbar-group">
         <span style="font-size:11px;color:var(--color-text-secondary)">BG</span>
         <input class="color-pick" type="color" id="pick-bg" value="#ffffff" title="Cell background">
+        <span class="value-state" id="pick-bg-value">unset</span>
         <span style="font-size:11px;color:var(--color-text-secondary)">FG</span>
         <input class="color-pick" type="color" id="pick-fg" value="#000000" title="Text color">
+        <span class="value-state" id="pick-fg-value">unset</span>
         <span style="font-size:11px;color:var(--color-text-secondary)">Border</span>
         <input class="color-pick" type="color" id="pick-border" value="#888888" title="Border color">
+        <span class="value-state" id="pick-border-value">unset</span>
       </div>
       <div class="sep"></div>
       <div class="toolbar-group">
@@ -144,15 +150,16 @@
             </div>
             <div class="prop-row">
               <span class="prop-label">Padding (px)</span>
-              <input class="prop-input" id="cell-padding" placeholder="6" type="number" min="0" max="40">
+              <input class="prop-input" id="cell-padding" placeholder="unset" type="number" min="0" max="40">
             </div>
             <div class="prop-row">
               <span class="prop-label">Border width (px)</span>
-              <input class="prop-input" id="cell-border-w" placeholder="1" type="number" min="0" max="10">
+              <input class="prop-input" id="cell-border-w" placeholder="unset" type="number" min="0" max="10">
             </div>
             <div class="prop-row">
               <span class="prop-label">Border style</span>
               <select class="prop-input" id="cell-border-style">
+                <option value="">Unset</option>
                 <option>solid</option>
                 <option>dashed</option>
                 <option>dotted</option>
@@ -219,6 +226,8 @@
             <b style="color:var(--color-text-primary)">Edit</b> — double-click or F2<br>
             <b style="color:var(--color-text-primary)">Confirm edit</b> — Tab or Escape<br>
             <b style="color:var(--color-text-primary)">Navigate</b> — arrow keys<br>
+            <b style="color:var(--color-text-primary)">Unset values</b> — blank controls mean no explicit style is
+            applied<br>
             <b style="color:var(--color-text-primary)">Merge</b> — select multiple cells → Merge<br>
             <b style="color:var(--color-text-primary)">Split H</b> — splits into top/bottom rows<br>
             <b style="color:var(--color-text-primary)">Split V</b> — splits into left/right cols<br>

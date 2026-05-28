@@ -3,6 +3,24 @@
   const T = global.Table;
   const U = global.Utils;
 
+  function isUnsetValue(value) {
+    return value === '' || value == null;
+  }
+
+  function setFieldValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = isUnsetValue(value) ? '' : value;
+  }
+
+  function setStatusLabel(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const unset = isUnsetValue(value);
+    el.textContent = unset ? 'unset' : value;
+    el.classList.toggle('is-unset', unset);
+  }
+
   function updateSidePanel() {
     const noSel = document.getElementById('no-sel-msg');
     const props = document.getElementById('cell-props');
@@ -23,18 +41,20 @@
       sb.style.display = '';
     } else sb.style.display = 'none';
     document.getElementById('cell-content').value = cd.content;
-    document.getElementById('cell-width').value = cd.width || '';
-    document.getElementById('cell-height').value = cd.height || '';
-    document.getElementById('cell-padding').value = cd.padding || '6';
-    document.getElementById('cell-border-w').value = cd.borderWidth || '1';
-    document.getElementById('cell-border-style').value =
-      cd.borderStyle || 'solid';
-    document.getElementById('sel-align').value = cd.align || 'left';
-    document.getElementById('sel-valign').value = cd.valign || 'top';
-    document.getElementById('sel-fontsize').value = cd.fontsize || '14px';
+    setFieldValue('cell-width', cd.width);
+    setFieldValue('cell-height', cd.height);
+    setFieldValue('cell-padding', cd.padding);
+    setFieldValue('cell-border-w', cd.borderWidth);
+    setFieldValue('cell-border-style', cd.borderStyle);
+    setFieldValue('sel-align', cd.align);
+    setFieldValue('sel-valign', cd.valign);
+    setFieldValue('sel-fontsize', cd.fontsize);
     document.getElementById('pick-bg').value = cd.bg || '#ffffff';
     document.getElementById('pick-fg').value = cd.fg || '#000000';
     document.getElementById('pick-border').value = cd.borderColor || '#888888';
+    setStatusLabel('pick-bg-value', cd.bg);
+    setStatusLabel('pick-fg-value', cd.fg);
+    setStatusLabel('pick-border-value', cd.borderColor);
   }
 
   function copyHtml() {
@@ -91,12 +111,16 @@
     Object.keys(applyMap).forEach(id => {
       const el = byId(id);
       if (!el) return;
-      el.onchange = e => applyMap[id](e.target.value);
+      el.onchange = e => {
+        enableInlineStyles();
+        applyMap[id](e.target.value);
+      };
     });
 
     if (byId('btn-bold'))
       byId('btn-bold').onclick = () => {
         if (!state.selected) return;
+        enableInlineStyles();
         const cd = state.cells[state.selected[0]][state.selected[1]];
         cd.fontweight = cd.fontweight === 'bold' ? 'normal' : 'bold';
         T.renderTable();
@@ -104,6 +128,7 @@
     if (byId('btn-italic'))
       byId('btn-italic').onclick = () => {
         if (!state.selected) return;
+        enableInlineStyles();
         const cd = state.cells[state.selected[0]][state.selected[1]];
         cd.fontstyle = cd.fontstyle === 'italic' ? 'normal' : 'italic';
         T.renderTable();
@@ -111,6 +136,7 @@
     if (byId('btn-header'))
       byId('btn-header').onclick = () => {
         if (!state.selected) return;
+        enableInlineStyles();
         const cd = state.cells[state.selected[0]][state.selected[1]];
         cd.isHeader = !cd.isHeader;
         T.renderTable();
@@ -135,6 +161,7 @@
         const el = byId(id);
         if (!el) return;
         el.addEventListener('change', e => {
+          enableInlineStyles();
           map[id](e.target.value);
           T.renderTable();
         });
@@ -144,6 +171,7 @@
     if (byId('cell-border-style'))
       byId('cell-border-style').onchange = e => {
         if (!state.selected) return;
+        enableInlineStyles();
         state.cells[state.selected[0]][state.selected[1]].borderStyle =
           e.target.value;
         T.renderTable();
@@ -174,21 +202,25 @@
 
     if (byId('tbl-width'))
       byId('tbl-width').addEventListener('change', e => {
+        enableInlineStyles();
         state.tableProps.width = e.target.value;
         T.renderTable();
       });
     if (byId('tbl-collapse'))
       byId('tbl-collapse').onchange = e => {
+        enableInlineStyles();
         state.tableProps.collapse = e.target.value;
         T.renderTable();
       };
     if (byId('tbl-spacing'))
       byId('tbl-spacing').onchange = e => {
+        enableInlineStyles();
         state.tableProps.spacing = e.target.value;
         T.renderTable();
       };
     if (byId('tbl-caption'))
       byId('tbl-caption').addEventListener('input', e => {
+        enableInlineStyles();
         state.tableProps.caption = e.target.value;
         T.renderTable();
       });
@@ -197,6 +229,7 @@
       byId('btn-apply-preset').onclick = () => {
         const p = byId('tbl-preset').value;
         if (!p) return;
+        enableInlineStyles();
         for (let r = 0; r < state.rows; r++)
           for (let c = 0; c < state.cols; c++) {
             const cd = state.cells[r][c];
@@ -263,13 +296,16 @@
   }
 
   // Expose UI functions
-  global.UI = { updateSidePanel, copyHtml, wireEvents };
+  function enableInlineStyles() {
+    state.preserveNoStyles = false;
+  }
+
+  global.UI = { updateSidePanel, copyHtml, wireEvents, enableInlineStyles };
 
   // Auto-init when DOM ready
   document.addEventListener('DOMContentLoaded', () => {
-    state.suppressInlineStyles = true;
+    // preserveNoStyles is true by default; init without inline styles
     initTable(4, 5);
-    state.suppressInlineStyles = false;
     UI.wireEvents();
   });
 })(window);
