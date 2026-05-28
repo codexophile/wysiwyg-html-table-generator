@@ -488,6 +488,23 @@ body::after {
     transform 0.12s ease;
 }
 
+#tbl-container .cell-content {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#tbl-container .cell-content.editing {
+  outline: none;
+  overflow: hidden;
+  word-break: break-all;
+}
+
 #tbl-container th {
   background: linear-gradient(
     180deg,

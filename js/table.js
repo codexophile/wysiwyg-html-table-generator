@@ -29,12 +29,21 @@
       return;
     }
     try {
-      let html = tbl.outerHTML
-        .replace(/<div class="resize-handle"[^>]*><\/div>/g, '')
-        .replace(/\s*contenteditable="[^"]*"/g, '')
-        .replace(/ data-row="[^"]*"/g, '')
-        .replace(/ data-col="[^"]*"/g, '')
-        .replace(/ class="[^"]*"/g, '');
+      const clone = tbl.cloneNode(true);
+      clone.querySelectorAll('.cell-content').forEach(editor => {
+        const parent = editor.parentElement;
+        if (!parent) return;
+        const text = document.createTextNode(editor.textContent || '');
+        parent.replaceChild(text, editor);
+      });
+      clone.querySelectorAll('.resize-handle').forEach(handle => handle.remove());
+      clone.querySelectorAll('[contenteditable]').forEach(el => {
+        el.removeAttribute('contenteditable');
+      });
+      clone.querySelectorAll('[data-row]').forEach(el => el.removeAttribute('data-row'));
+      clone.querySelectorAll('[data-col]').forEach(el => el.removeAttribute('data-col'));
+      clone.querySelectorAll('[class]').forEach(el => el.removeAttribute('class'));
+      const html = clone.outerHTML;
       outEl.textContent = formatHtml(html);
     } catch (err) {
       console.error('updateHtmlOutput', err);
@@ -63,7 +72,9 @@
         const cd = state.cells[r][c];
         const tag = cd.isHeader ? 'th' : 'td';
         const cell = document.createElement(tag);
-        cell.textContent = cd.content;
+        const content = document.createElement('div');
+        content.className = 'cell-content';
+        content.textContent = cd.content;
         if (cd.colspan > 1) cell.colSpan = cd.colspan;
         if (cd.rowspan > 1) cell.rowSpan = cd.rowspan;
         if (!state.preserveNoStyles) {
@@ -83,6 +94,7 @@
         }
         cell.dataset.row = r;
         cell.dataset.col = c;
+        cell.appendChild(content);
 
         const key = cellKey(r, c);
         if (state.selSet.has(key)) cell.classList.add('in-selection');
@@ -94,8 +106,8 @@
           cell.classList.add('selected');
         if (state.editing && state.editing[0] === r && state.editing[1] === c) {
           cell.classList.add('editing');
-          cell.contentEditable = true;
-          cell.focus();
+          content.classList.add('editing');
+          content.contentEditable = true;
         }
 
         const rh = document.createElement('div');
@@ -205,12 +217,14 @@
     state.editing = [r, c];
     renderTable();
     const tbl = document.querySelector('#tbl-container table');
-    const cell = tbl.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-    if (cell) {
-      cell.focus();
+    const editor = tbl?.querySelector(
+      `[data-row="${r}"][data-col="${c}"] .cell-content`,
+    );
+    if (editor) {
+      editor.focus();
       const range = document.createRange();
       const sel = window.getSelection();
-      range.selectNodeContents(cell);
+      range.selectNodeContents(editor);
       range.collapse(false);
       sel.removeAllRanges();
       sel.addRange(range);
@@ -222,11 +236,12 @@
     const [r, c] = state.editing;
     const tbl = document.querySelector('#tbl-container table');
     const cell = tbl?.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-    if (cell) {
-      let txt = cell.innerText;
+    const editor = cell?.querySelector('.cell-content');
+    if (editor) {
+      let txt = editor.innerText;
       txt = txt.replace(/\n+$/, '');
       state.cells[r][c].content = txt;
-      cell.contentEditable = 'false';
+      editor.contentEditable = 'false';
     }
     state.editing = null;
     renderTable();
