@@ -224,6 +224,7 @@
             <b style="color:var(--color-text-primary)">Select</b> — click a cell<br>
             <b style="color:var(--color-text-primary)">Multi-select</b> — shift+click or drag<br>
             <b style="color:var(--color-text-primary)">Edit</b> — double-click or F2<br>
+            <b style="color:var(--color-text-primary)">Shortcuts</b> — press Shift+/ for keyboard tips<br>
             <b style="color:var(--color-text-primary)">Confirm edit</b> — Tab or Escape<br>
             <b style="color:var(--color-text-primary)">Navigate</b> — arrow keys<br>
             <b style="color:var(--color-text-primary)">Live edits</b> — property changes update the preview and HTML
@@ -242,6 +243,39 @@
             selected cell.
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shortcuts-modal" id="shortcuts-modal" aria-hidden="true" hidden>
+    <div class="shortcuts-backdrop" data-shortcuts-close></div>
+    <div class="shortcuts-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" tabindex="-1">
+      <div class="shortcuts-header">
+        <div>
+          <p class="shortcuts-eyebrow">Keyboard shortcuts</p>
+          <h2 id="shortcuts-title">Table editing shortcuts</h2>
+        </div>
+        <button class="tb-btn shortcuts-close" id="btn-shortcuts-close" type="button"
+          title="Close shortcuts">Close</button>
+      </div>
+      <p class="shortcuts-copy">Press Shift+/ anytime outside a text field to open this panel.</p>
+      <div class="shortcuts-list" role="list">
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">Arrow keys</span><span
+            class="shortcut-desc">Move the current selection</span></div>
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">Shift + Arrow</span><span
+            class="shortcut-desc">Extend the selection range</span></div>
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">F2</span><span class="shortcut-desc">Edit
+            the active cell</span></div>
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">Enter</span><span
+            class="shortcut-desc">Start editing the active cell</span></div>
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">Delete</span><span
+            class="shortcut-desc">Clear the active cell content</span></div>
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">Ctrl/Cmd + B</span><span
+            class="shortcut-desc">Toggle bold on the selected cell</span></div>
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">Ctrl/Cmd + I</span><span
+            class="shortcut-desc">Toggle italic on the selected cell</span></div>
+        <div class="shortcut-row" role="listitem"><span class="shortcut-key">Shift + /</span><span
+            class="shortcut-desc">Open this shortcut guide</span></div>
       </div>
     </div>
   </div>

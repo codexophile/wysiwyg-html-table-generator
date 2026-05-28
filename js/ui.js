@@ -76,6 +76,44 @@
     }
   }
 
+  function isTypingTarget(target) {
+    if (!target) return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  }
+
+  function toggleCellStyle(prop, onValue, offValue) {
+    if (!state.selected) return;
+    enableInlineStyles();
+    const cd = state.cells[state.selected[0]][state.selected[1]];
+    cd[prop] = cd[prop] === onValue ? offValue : onValue;
+    T.renderTable();
+  }
+
+  function showShortcutsModal() {
+    const modal = document.getElementById('shortcuts-modal');
+    if (!modal) return;
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    const dialog = modal.querySelector('.shortcuts-dialog');
+    if (dialog) dialog.focus();
+  }
+
+  function hideShortcutsModal() {
+    const modal = document.getElementById('shortcuts-modal');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function toggleShortcutsModal() {
+    const modal = document.getElementById('shortcuts-modal');
+    if (!modal) return;
+    if (modal.hidden) showShortcutsModal();
+    else hideShortcutsModal();
+  }
+
   function wireEvents() {
     // Toolbar
     const byId = id => document.getElementById(id);
@@ -105,6 +143,11 @@
     if (byId('btn-split-v')) byId('btn-split-v').onclick = T.splitV;
     if (byId('btn-copy-html')) byId('btn-copy-html').onclick = copyHtml;
     if (byId('btn-copy-html2')) byId('btn-copy-html2').onclick = copyHtml;
+    if (byId('btn-shortcuts-close'))
+      byId('btn-shortcuts-close').onclick = hideShortcutsModal;
+    document.querySelectorAll('[data-shortcuts-close]').forEach(el => {
+      el.onclick = hideShortcutsModal;
+    });
     if (byId('btn-clear'))
       byId('btn-clear').onclick = () => {
         if (confirm('Clear all table data?')) initTable(state.rows, state.cols);
@@ -263,6 +306,38 @@
 
     // Keyboard navigation
     document.addEventListener('keydown', e => {
+      const modal = byId('shortcuts-modal');
+      if (modal && !modal.hidden) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          hideShortcutsModal();
+        }
+        return;
+      }
+
+      const shortcutPressed =
+        e.shiftKey && (e.key === '?' || (e.key === '/' && e.code === 'Slash'));
+      if (shortcutPressed && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        toggleShortcutsModal();
+        return;
+      }
+
+      if (!state.editing && !isTypingTarget(e.target)) {
+        const isMac = navigator.platform.toLowerCase().includes('mac');
+        const accelKey = isMac ? e.metaKey : e.ctrlKey;
+        if (accelKey && e.key.toLowerCase() === 'b') {
+          e.preventDefault();
+          toggleCellStyle('fontweight', 'bold', 'normal');
+          return;
+        }
+        if (accelKey && e.key.toLowerCase() === 'i') {
+          e.preventDefault();
+          toggleCellStyle('fontstyle', 'italic', 'normal');
+          return;
+        }
+      }
+
       if (state.editing) {
         if (e.key === 'Escape' || e.key === 'Tab') {
           e.preventDefault();
