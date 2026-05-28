@@ -239,6 +239,26 @@
       .filter(Boolean);
   }
 
+  function findVisibleCellInRowCoveringCol(row, col) {
+    for (let startCol = col; startCol >= 0; startCol--) {
+      const cell = state.cells[row]?.[startCol];
+      if (!cell) continue;
+      if (isCellVisible(row, startCol) && startCol + cell.colspan > col)
+        return cell;
+    }
+    return null;
+  }
+
+  function findVisibleCellInColCoveringRow(col, row) {
+    for (let startRow = row; startRow >= 0; startRow--) {
+      const cell = state.cells[startRow]?.[col];
+      if (!cell) continue;
+      if (isCellVisible(startRow, col) && startRow + cell.rowspan > row)
+        return cell;
+    }
+    return null;
+  }
+
   function applyToSelected(prop, val) {
     getSelCells().forEach(cd => {
       cd[prop] = val;
@@ -310,11 +330,8 @@
         for (let cc = 0; cc < state.cols; cc++) state.cells[rr][cc].row = rr;
       for (let cc = 0; cc < state.cols; cc++) {
         if (cc === c) continue;
-        const oc = state.cells[r][cc];
-        if (oc.rowspan > 1) {
-          // extend the existing vertical span to cover the new row
-          oc.rowspan++;
-        }
+        const oc = findVisibleCellInColCoveringRow(cc, r);
+        if (oc) oc.rowspan++;
       }
     } else {
       // shrink the rowspan of the selected cell and reset the
@@ -346,8 +363,8 @@
         for (let cc = 0; cc < state.cols; cc++) state.cells[rr][cc].col = cc;
       for (let rr = 0; rr < state.rows; rr++) {
         if (rr === r) continue;
-        const oc = state.cells[rr][c];
-        if (oc.colspan > 1) oc.colspan++;
+        const oc = findVisibleCellInRowCoveringCol(rr, c);
+        if (oc) oc.colspan++;
       }
     } else {
       // shrink the colspan of the selected cell and reset the

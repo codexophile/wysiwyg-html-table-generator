@@ -231,12 +231,15 @@
             <b style="color:var(--color-text-primary)">Unset values</b> — blank controls mean no explicit style is
             applied<br>
             <b style="color:var(--color-text-primary)">Merge</b> — select multiple cells → Merge<br>
-            <b style="color:var(--color-text-primary)">Split H</b> — splits into top/bottom rows<br>
-            <b style="color:var(--color-text-primary)">Split V</b> — splits into left/right cols<br>
+            <b style="color:var(--color-text-primary)">Split H</b> — inserts a row through the selection and extends
+            neighboring cells vertically<br>
+            <b style="color:var(--color-text-primary)">Split V</b> — inserts a column through the selection and
+            extends neighboring cells horizontally<br>
             <b style="color:var(--color-text-primary)">Resize columns</b> — drag right border of cell<br>
             <br>
             <b style="color:var(--color-text-primary)">Merge rules:</b> Selection must form a rectangle. Merging
-            combines all cell text. Split undoes colspan/rowspan by 1.
+            combines all cell text. Split either breaks a merged cell apart by 1 or adds a new row/column through the
+            selected cell.
           </div>
         </div>
       </div>
