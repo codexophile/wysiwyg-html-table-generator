@@ -36,13 +36,21 @@
         const text = document.createTextNode(editor.textContent || '');
         parent.replaceChild(text, editor);
       });
-      clone.querySelectorAll('.resize-handle').forEach(handle => handle.remove());
+      clone
+        .querySelectorAll('.resize-handle')
+        .forEach(handle => handle.remove());
       clone.querySelectorAll('[contenteditable]').forEach(el => {
         el.removeAttribute('contenteditable');
       });
-      clone.querySelectorAll('[data-row]').forEach(el => el.removeAttribute('data-row'));
-      clone.querySelectorAll('[data-col]').forEach(el => el.removeAttribute('data-col'));
-      clone.querySelectorAll('[class]').forEach(el => el.removeAttribute('class'));
+      clone
+        .querySelectorAll('[data-row]')
+        .forEach(el => el.removeAttribute('data-row'));
+      clone
+        .querySelectorAll('[data-col]')
+        .forEach(el => el.removeAttribute('data-col'));
+      clone
+        .querySelectorAll('[class]')
+        .forEach(el => el.removeAttribute('class'));
       const html = clone.outerHTML;
       outEl.textContent = formatHtml(html);
     } catch (err) {
