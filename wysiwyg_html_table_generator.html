@@ -1,0 +1,684 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary)}
+.app{display:grid;grid-template-rows:auto 1fr;height:600px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary)}
+.toolbar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);flex-wrap:wrap}
+.toolbar-group{display:flex;align-items:center;gap:2px}
+.sep{width:0.5px;height:20px;background:var(--color-border-secondary);margin:0 4px}
+.tb-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 9px;border:0.5px solid transparent;border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-secondary);cursor:pointer;font-size:13px;white-space:nowrap;transition:background 0.12s,color 0.12s,border-color 0.12s}
+.tb-btn:hover{background:var(--color-background-primary);border-color:var(--color-border-secondary);color:var(--color-text-primary)}
+.tb-btn.active{background:var(--color-background-primary);border-color:var(--color-border-primary);color:var(--color-text-primary)}
+.tb-btn.danger:hover{background:#FCEBEB;color:#A32D2D;border-color:#F09595}
+.tb-btn i{font-size:15px}
+.tb-select{padding:4px 6px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px;cursor:pointer;outline:none}
+.color-pick{width:26px;height:26px;padding:2px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;background:transparent}
+.main{display:grid;grid-template-columns:1fr 260px;overflow:hidden}
+.editor-area{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.canvas-wrap{overflow:auto;flex:1;display:flex;align-items:flex-start;justify-content:flex-start}
+.side-panel{border-left:0.5px solid var(--color-border-tertiary);overflow-y:auto;display:flex;flex-direction:column}
+.panel-tabs{display:flex;border-bottom:0.5px solid var(--color-border-tertiary)}
+.panel-tab{flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;background:transparent;border-top:0;border-left:0;border-right:0}
+.panel-tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary)}
+.panel-body{padding:12px;display:flex;flex-direction:column;gap:10px;flex:1}
+.prop-row{display:flex;flex-direction:column;gap:4px}
+.prop-label{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.04em}
+.prop-input{padding:5px 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;outline:none;width:100%}
+.prop-input:focus{border-color:var(--color-border-primary)}
+.prop-row-h{display:flex;gap:6px;align-items:center}
+.prop-row-h .prop-label{min-width:60px;margin:0}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
+.badge-info{background:#E6F1FB;color:#0C447C}
+.info-bar{font-size:11px;color:var(--color-text-secondary);padding:0 2px}
+
+/* Table styles */
+#tbl-container table{border-collapse:collapse;table-layout:fixed;font-family:var(--font-sans);font-size:14px;min-width:400px}
+#tbl-container td{border:1.5px solid #888;padding:6px 8px;min-width:60px;min-height:32px;position:relative;cursor:pointer;vertical-align:top;word-break:break-word;outline:none;transition:background 0.1s}
+#tbl-container td.selected{outline:2px solid #185FA5;outline-offset:-2px;z-index:2}
+#tbl-container td.in-selection{background:rgba(55,138,221,0.12)}
+#tbl-container td.editing{outline:2px solid #639922;outline-offset:-2px}
+#tbl-container td:hover:not(.selected):not(.editing){background:rgba(55,138,221,0.06)}
+.resize-handle{position:absolute;right:-3px;top:0;width:6px;height:100%;cursor:col-resize;z-index:5;background:transparent}
+.resize-handle:hover{background:rgba(55,138,221,0.3)}
+
+/* HTML Preview */
+#html-out{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;white-space:pre-wrap;overflow-x:auto;max-height:200px;overflow-y:auto;color:var(--color-text-secondary)}
+</style>
+
+<h2 class="sr-only">WYSIWYG HTML Table Generator with cell merge, split, and formatting tools</h2>
+
+<div class="app">
+  <div class="toolbar" id="toolbar">
+    <div class="toolbar-group">
+      <button class="tb-btn" title="Add row above" id="btn-row-above"><i class="ti ti-row-insert-top"></i></button>
+      <button class="tb-btn" title="Add row below" id="btn-row-below"><i class="ti ti-row-insert-bottom"></i></button>
+      <button class="tb-btn danger" title="Delete row" id="btn-del-row"><i class="ti ti-row-remove"></i></button>
+    </div>
+    <div class="sep"></div>
+    <div class="toolbar-group">
+      <button class="tb-btn" title="Add column left" id="btn-col-left"><i class="ti ti-column-insert-left"></i></button>
+      <button class="tb-btn" title="Add column right" id="btn-col-right"><i class="ti ti-column-insert-right"></i></button>
+      <button class="tb-btn danger" title="Delete column" id="btn-del-col"><i class="ti ti-column-remove"></i></button>
+    </div>
+    <div class="sep"></div>
+    <div class="toolbar-group">
+      <button class="tb-btn" id="btn-merge" title="Merge selected cells"><i class="ti ti-table-options"></i> Merge</button>
+      <button class="tb-btn" id="btn-split-h" title="Split cell horizontally"><i class="ti ti-layout-rows"></i> Split H</button>
+      <button class="tb-btn" id="btn-split-v" title="Split cell vertically"><i class="ti ti-layout-columns"></i> Split V</button>
+    </div>
+    <div class="sep"></div>
+    <div class="toolbar-group">
+      <select class="tb-select" id="sel-align" title="Text align">
+        <option value="left">⬛ Left</option>
+        <option value="center">⬜ Center</option>
+        <option value="right">▪ Right</option>
+      </select>
+      <select class="tb-select" id="sel-valign" title="Vertical align">
+        <option value="top">Top</option>
+        <option value="middle">Middle</option>
+        <option value="bottom">Bottom</option>
+      </select>
+      <select class="tb-select" id="sel-fontsize" title="Font size">
+        <option>12px</option><option selected>14px</option><option>16px</option><option>18px</option><option>20px</option><option>24px</option>
+      </select>
+    </div>
+    <div class="sep"></div>
+    <div class="toolbar-group">
+      <button class="tb-btn" id="btn-bold" title="Bold"><i class="ti ti-bold"></i></button>
+      <button class="tb-btn" id="btn-italic" title="Italic"><i class="ti ti-italic"></i></button>
+      <button class="tb-btn" id="btn-header" title="Toggle header cell"><i class="ti ti-heading"></i> TH</button>
+    </div>
+    <div class="sep"></div>
+    <div class="toolbar-group">
+      <span style="font-size:11px;color:var(--color-text-secondary)">BG</span>
+      <input class="color-pick" type="color" id="pick-bg" value="#ffffff" title="Cell background">
+      <span style="font-size:11px;color:var(--color-text-secondary)">FG</span>
+      <input class="color-pick" type="color" id="pick-fg" value="#000000" title="Text color">
+      <span style="font-size:11px;color:var(--color-text-secondary)">Border</span>
+      <input class="color-pick" type="color" id="pick-border" value="#888888" title="Border color">
+    </div>
+    <div class="sep"></div>
+    <div class="toolbar-group">
+      <button class="tb-btn danger" id="btn-clear" title="Clear table"><i class="ti ti-trash"></i></button>
+      <button class="tb-btn" id="btn-copy-html" title="Copy HTML"><i class="ti ti-copy"></i> HTML</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="editor-area">
+      <div class="info-bar" id="info-bar">Click a cell to select • Shift+click to multi-select • Double-click to edit • Drag borders to resize</div>
+      <div class="canvas-wrap"><div id="tbl-container"></div></div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.04em">Live HTML Output</span>
+          <button class="tb-btn" id="btn-copy-html2" style="padding:3px 8px;font-size:11px"><i class="ti ti-copy"></i> Copy</button>
+        </div>
+        <div id="html-out"></div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-tab="cell">Cell</button>
+        <button class="panel-tab" data-tab="table">Table</button>
+        <button class="panel-tab" data-tab="help">Help</button>
+      </div>
+      <div class="panel-body" id="panel-cell">
+        <div style="color:var(--color-text-secondary);font-size:13px" id="no-sel-msg">Select a cell to edit its properties</div>
+        <div id="cell-props" style="display:none;flex-direction:column;gap:10px">
+          <div class="prop-row">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="prop-label">Cell</span>
+              <span class="badge badge-info" id="cell-addr">R1 C1</span>
+              <span class="badge" id="span-badge" style="background:var(--color-background-secondary);color:var(--color-text-secondary)"></span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Content</span>
+            <textarea class="prop-input" id="cell-content" rows="3" style="resize:vertical"></textarea>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Width (px or %)</span>
+            <input class="prop-input" id="cell-width" placeholder="auto" type="text">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Height (px)</span>
+            <input class="prop-input" id="cell-height" placeholder="auto" type="text">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Padding (px)</span>
+            <input class="prop-input" id="cell-padding" placeholder="6" type="number" min="0" max="40">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Border width (px)</span>
+            <input class="prop-input" id="cell-border-w" placeholder="1" type="number" min="0" max="10">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Border style</span>
+            <select class="prop-input" id="cell-border-style">
+              <option>solid</option><option>dashed</option><option>dotted</option><option>double</option><option>none</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-body" id="panel-table" style="display:none">
+        <div class="prop-row">
+          <span class="prop-label">Table width</span>
+          <input class="prop-input" id="tbl-width" placeholder="100%" type="text">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Border collapse</span>
+          <select class="prop-input" id="tbl-collapse">
+            <option value="collapse">Collapse</option>
+            <option value="separate">Separate</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Border spacing (px)</span>
+          <input class="prop-input" id="tbl-spacing" placeholder="0" type="number" min="0" max="20">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Caption</span>
+          <input class="prop-input" id="tbl-caption" placeholder="Optional caption">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Preset styles</span>
+          <select class="prop-input" id="tbl-preset">
+            <option value="">Custom</option>
+            <option value="simple">Simple lines</option>
+            <option value="striped">Striped rows</option>
+            <option value="minimal">Minimal</option>
+            <option value="dark">Dark header</option>
+          </select>
+        </div>
+        <button class="tb-btn" id="btn-apply-preset" style="margin-top:4px">Apply preset</button>
+        <div style="margin-top:8px">
+          <div class="prop-row" style="margin-bottom:6px">
+            <span class="prop-label">Dimensions</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="prop-row" style="flex:1">
+              <span class="prop-label" style="font-size:10px">Rows</span>
+              <input class="prop-input" id="tbl-rows" type="number" min="1" max="20" value="3">
+            </div>
+            <div class="prop-row" style="flex:1">
+              <span class="prop-label" style="font-size:10px">Cols</span>
+              <input class="prop-input" id="tbl-cols" type="number" min="1" max="12" value="4">
+            </div>
+          </div>
+          <button class="tb-btn" id="btn-resize-table" style="margin-top:6px;width:100%">Resize table</button>
+        </div>
+      </div>
+
+      <div class="panel-body" id="panel-help" style="display:none;gap:8px">
+        <div style="font-size:12px;line-height:1.7;color:var(--color-text-secondary)">
+          <b style="color:var(--color-text-primary)">Select</b> — click a cell<br>
+          <b style="color:var(--color-text-primary)">Multi-select</b> — shift+click or drag<br>
+          <b style="color:var(--color-text-primary)">Edit</b> — double-click or F2<br>
+          <b style="color:var(--color-text-primary)">Confirm edit</b> — Tab or Escape<br>
+          <b style="color:var(--color-text-primary)">Navigate</b> — arrow keys<br>
+          <b style="color:var(--color-text-primary)">Merge</b> — select multiple cells → Merge<br>
+          <b style="color:var(--color-text-primary)">Split H</b> — splits into top/bottom rows<br>
+          <b style="color:var(--color-text-primary)">Split V</b> — splits into left/right cols<br>
+          <b style="color:var(--color-text-primary)">Resize columns</b> — drag right border of cell<br>
+          <br>
+          <b style="color:var(--color-text-primary)">Merge rules:</b> Selection must form a rectangle. Merging combines all cell text. Split undoes colspan/rowspan by 1.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  rows: 4, cols: 5,
+  cells: [],
+  selected: null,
+  selSet: new Set(),
+  editing: null,
+  tableProps: {width:'100%', collapse:'collapse', spacing:0, caption:''}
+};
+
+function makeCellData(r,c){
+  return {row:r,col:c,content:'',colspan:1,rowspan:1,isHeader:false,
+    bg:'',fg:'',fontsize:'14px',fontweight:'normal',fontstyle:'normal',
+    align:'left',valign:'top',width:'',height:'',padding:'6',borderWidth:'1',borderStyle:'solid',borderColor:'#888888'};
+}
+
+function initTable(rows,cols){
+  state.rows=rows; state.cols=cols;
+  state.cells=[];
+  for(let r=0;r<rows;r++){state.cells.push([]);for(let c=0;c<cols;c++)state.cells[r].push(makeCellData(r,c));}
+  state.selected=null; state.selSet=new Set(); state.editing=null;
+  renderTable();
+}
+
+function cellKey(r,c){return r+','+c;}
+
+function isCellVisible(r,c){
+  const cell=state.cells[r]?.[c];
+  if(!cell) return false;
+  for(let pr=0;pr<state.rows;pr++) for(let pc=0;pc<state.cols;pc++){
+    const other=state.cells[pr][pc];
+    if((pr===r&&pc===c)) continue;
+    if(pr<=r&&r<pr+other.rowspan&&pc<=c&&c<pc+other.colspan) return false;
+  }
+  return true;
+}
+
+function renderTable(){
+  const cont=document.getElementById('tbl-container');
+  const tbl=document.createElement('table');
+  const tp=state.tableProps;
+  tbl.style.cssText=`width:${tp.width||'auto'};border-collapse:${tp.collapse};${tp.collapse==='separate'?'border-spacing:'+tp.spacing+'px':''}`;
+
+  if(tp.caption){
+    const cap=tbl.createCaption();
+    cap.textContent=tp.caption;
+  }
+
+  for(let r=0;r<state.rows;r++){
+    const tr=tbl.insertRow();
+    for(let c=0;c<state.cols;c++){
+      if(!isCellVisible(r,c)) continue;
+      const cd=state.cells[r][c];
+      const tag=cd.isHeader?'th':'td';
+      const cell=document.createElement(tag);
+      cell.textContent=cd.content;
+      if(cd.colspan>1) cell.colSpan=cd.colspan;
+      if(cd.rowspan>1) cell.rowSpan=cd.rowspan;
+      let styleStr=`text-align:${cd.align};vertical-align:${cd.valign};font-size:${cd.fontsize};font-weight:${cd.fontweight};font-style:${cd.fontstyle};`;
+      if(cd.bg) styleStr+=`background:${cd.bg};`;
+      if(cd.fg) styleStr+=`color:${cd.fg};`;
+      if(cd.padding) styleStr+=`padding:${cd.padding}px;`;
+      if(cd.width) styleStr+=`width:${cd.width};`;
+      if(cd.height) styleStr+=`height:${cd.height}px;`;
+      styleStr+=`border:${cd.borderWidth}px ${cd.borderStyle} ${cd.borderColor};`;
+      cell.style.cssText=styleStr;
+      cell.dataset.row=r; cell.dataset.col=c;
+
+      const key=cellKey(r,c);
+      if(state.selSet.has(key)) cell.classList.add('in-selection');
+      if(state.selected&&state.selected[0]===r&&state.selected[1]===c) cell.classList.add('selected');
+      if(state.editing&&state.editing[0]===r&&state.editing[1]===c){
+        cell.classList.add('editing');
+        cell.contentEditable=true;
+        cell.focus();
+      }
+
+      const rh=document.createElement('div');
+      rh.className='resize-handle'; rh.dataset.row=r; rh.dataset.col=c;
+      cell.appendChild(rh);
+      tr.appendChild(cell);
+    }
+  }
+  cont.innerHTML='';
+  cont.appendChild(tbl);
+  attachEvents(tbl);
+  updateHtmlOutput();
+}
+
+let dragSelecting=false, dragStart=null, resizingCol=null, resizeStartX=0, resizeStartW=0;
+
+function attachEvents(tbl){
+  tbl.querySelectorAll('td,th').forEach(cell=>{
+    const r=+cell.dataset.row, c=+cell.dataset.col;
+    cell.addEventListener('mousedown',e=>{
+      if(e.target.classList.contains('resize-handle')) return;
+      if(state.editing) stopEditing(); 
+      if(e.shiftKey&&state.selected){
+        const [sr,sc]=state.selected;
+        const r0=Math.min(sr,r),r1=Math.max(sr,r),c0=Math.min(sc,c),c1=Math.max(sc,c);
+        state.selSet=new Set();
+        for(let rr=r0;rr<=r1;rr++) for(let cc=c0;cc<=c1;cc++) state.selSet.add(cellKey(rr,cc));
+        renderTable(); return;
+      }
+      dragSelecting=true; dragStart=[r,c];
+      state.selected=[r,c]; state.selSet=new Set([cellKey(r,c)]);
+      renderTable(); updateSidePanel();
+    });
+    cell.addEventListener('dblclick',e=>{if(!e.target.classList.contains('resize-handle')) startEditing(r,c);});
+    cell.addEventListener('mousemove',e=>{
+      if(dragSelecting&&dragStart){
+        const r0=Math.min(dragStart[0],r),r1=Math.max(dragStart[0],r),c0=Math.min(dragStart[1],c),c1=Math.max(dragStart[1],c);
+        state.selSet=new Set();
+        for(let rr=r0;rr<=r1;rr++) for(let cc=c0;cc<=c1;cc++) state.selSet.add(cellKey(rr,cc));
+        renderTable();
+      }
+    });
+  });
+  tbl.querySelectorAll('.resize-handle').forEach(rh=>{
+    rh.addEventListener('mousedown',e=>{
+      e.stopPropagation(); e.preventDefault();
+      const c=+rh.dataset.col;
+      resizingCol=c; resizeStartX=e.clientX;
+      const cell=rh.closest('td,th');
+      resizeStartW=cell.offsetWidth;
+    });
+  });
+  document.addEventListener('mouseup',()=>{
+    dragSelecting=false; dragStart=null;
+    if(resizingCol!==null){
+      resizingCol=null;
+    }
+  });
+  document.addEventListener('mousemove',e=>{
+    if(resizingCol!==null){
+      const dx=e.clientX-resizeStartX;
+      const nw=Math.max(40,resizeStartW+dx);
+      for(let r=0;r<state.rows;r++) if(isCellVisible(r,resizingCol)){
+        state.cells[r][resizingCol].width=nw+'px';
+      }
+      renderTable();
+    }
+  });
+}
+
+function startEditing(r,c){
+  state.editing=[r,c];
+  renderTable();
+  const tbl=document.querySelector('#tbl-container table');
+  const cell=tbl.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+  if(cell){cell.focus();const range=document.createRange();const sel=window.getSelection();range.selectNodeContents(cell);range.collapse(false);sel.removeAllRanges();sel.addRange(range);}
+}
+
+function stopEditing(){
+  if(!state.editing) return;
+  const [r,c]=state.editing;
+  const tbl=document.querySelector('#tbl-container table');
+  const cell=tbl?.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+  if(cell){
+    let txt=cell.innerText; txt=txt.replace(/\n+$/,'');
+    state.cells[r][c].content=txt;
+    cell.contentEditable='false';
+  }
+  state.editing=null;
+  renderTable(); updateSidePanel();
+}
+
+document.addEventListener('keydown',e=>{
+  if(state.editing){
+    if(e.key==='Escape'||e.key==='Tab'){e.preventDefault();stopEditing();}
+    return;
+  }
+  if(!state.selected) return;
+  let [r,c]=state.selected;
+  if(e.key==='ArrowRight'&&c<state.cols-1) state.selected=[r,c+1];
+  else if(e.key==='ArrowLeft'&&c>0) state.selected=[r,c-1];
+  else if(e.key==='ArrowDown'&&r<state.rows-1) state.selected=[r+1,c];
+  else if(e.key==='ArrowUp'&&r>0) state.selected=[r-1,c];
+  else if(e.key==='F2'||e.key==='Enter'){startEditing(r,c); return;}
+  else if(e.key==='Delete'){state.cells[r][c].content=''; renderTable(); return;}
+  else return;
+  e.preventDefault();
+  state.selSet=new Set([cellKey(...state.selected)]);
+  renderTable(); updateSidePanel();
+});
+
+function getSelCells(){
+  return [...state.selSet].map(k=>{const[r,c]=k.split(',').map(Number);return state.cells[r]?.[c];}).filter(Boolean);
+}
+
+function applyToSelected(prop,val){
+  getSelCells().forEach(cd=>{cd[prop]=val;});
+  renderTable();
+}
+
+function mergeSelected(){
+  if(state.selSet.size<2){alert('Select at least 2 cells to merge.');return;}
+  const coords=[...state.selSet].map(k=>k.split(',').map(Number));
+  const rs=coords.map(c=>c[0]), cs=coords.map(c=>c[1]);
+  const r0=Math.min(...rs),r1=Math.max(...rs),c0=Math.min(...cs),c1=Math.max(...cs);
+  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
+    if(!isCellVisible(r,c)){alert('Cannot merge: selection contains already-merged cells. Unmerge them first.');return;}
+  }
+  const texts=[];
+  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
+    if(state.cells[r][c].content) texts.push(state.cells[r][c].content);
+    if(r!==r0||c!==c0){state.cells[r][c].content='';state.cells[r][c].colspan=1;state.cells[r][c].rowspan=1;}
+  }
+  state.cells[r0][c0].colspan=c1-c0+1;
+  state.cells[r0][c0].rowspan=r1-r0+1;
+  state.cells[r0][c0].content=texts.join(' ');
+  state.selected=[r0,c0]; state.selSet=new Set([cellKey(r0,c0)]);
+  renderTable(); updateSidePanel();
+}
+
+function splitH(){
+  if(!state.selected){alert('Select a cell first.');return;}
+  const [r,c]=state.selected;
+  const cd=state.cells[r][c];
+  if(cd.rowspan<2){
+    if(state.rows>=20){alert('Max rows reached.');return;}
+    state.cells.splice(r+1,0,Array.from({length:state.cols},(_,ci)=>makeCellData(r+1,ci)));
+    state.rows++;
+    for(let rr=r+2;rr<state.rows;rr++) for(let cc=0;cc<state.cols;cc++) state.cells[rr][cc].row=rr;
+    for(let cc=0;cc<state.cols;cc++){
+      if(cc===c) continue;
+      const oc=state.cells[r][cc];
+      if(oc.rowspan>1){const nc=state.cells[r+1][cc];nc.rowspan=0;oc.rowspan++;}
+    }
+  } else {
+    cd.rowspan--;
+    const tr=r+cd.rowspan;
+    for(let cc=c;cc<c+cd.colspan;cc++) state.cells[tr][cc].content='';
+  }
+  renderTable();
+}
+
+function splitV(){
+  if(!state.selected){alert('Select a cell first.');return;}
+  const [r,c]=state.selected;
+  const cd=state.cells[r][c];
+  if(cd.colspan<2){
+    if(state.cols>=12){alert('Max columns reached.');return;}
+    for(let rr=0;rr<state.rows;rr++) state.cells[rr].splice(c+1,0,makeCellData(rr,c+1));
+    state.cols++;
+    for(let rr=0;rr<state.rows;rr++) for(let cc=0;cc<state.cols;cc++) state.cells[rr][cc].col=cc;
+    for(let rr=0;rr<state.rows;rr++){
+      if(rr===r) continue;
+      const oc=state.cells[rr][c];
+      if(oc.colspan>1) oc.colspan++;
+    }
+  } else {
+    cd.colspan--;
+  }
+  renderTable();
+}
+
+function addRow(after){
+  if(state.rows>=20){alert('Max rows reached.');return;}
+  const at=state.selected?state.selected[0]:state.rows-1;
+  const pos=after?at+1:at;
+  state.cells.splice(pos,0,Array.from({length:state.cols},(_,ci)=>makeCellData(pos,ci)));
+  state.rows++;
+  for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) state.cells[r][c].row=r;
+  renderTable();
+}
+
+function delRow(){
+  if(state.rows<=1){alert('Cannot delete the last row.');return;}
+  const at=state.selected?state.selected[0]:state.rows-1;
+  for(let c=0;c<state.cols;c++){
+    const cd=state.cells[at][c];
+    if(cd.rowspan>1) cd.rowspan--;
+  }
+  state.cells.splice(at,1); state.rows--;
+  state.selected=null; state.selSet=new Set();
+  renderTable();
+}
+
+function addCol(after){
+  if(state.cols>=12){alert('Max columns reached.');return;}
+  const at=state.selected?state.selected[1]:state.cols-1;
+  const pos=after?at+1:at;
+  for(let r=0;r<state.rows;r++) state.cells[r].splice(pos,0,makeCellData(r,pos));
+  state.cols++;
+  for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) state.cells[r][c].col=c;
+  renderTable();
+}
+
+function delCol(){
+  if(state.cols<=1){alert('Cannot delete the last column.');return;}
+  const at=state.selected?state.selected[1]:state.cols-1;
+  for(let r=0;r<state.rows;r++){
+    const cd=state.cells[r][at];
+    if(cd.colspan>1) cd.colspan--;
+  }
+  for(let r=0;r<state.rows;r++) state.cells[r].splice(at,1);
+  state.cols--;
+  state.selected=null; state.selSet=new Set();
+  renderTable();
+}
+
+function updateSidePanel(){
+  if(!state.selected){
+    document.getElementById('no-sel-msg').style.display='';
+    document.getElementById('cell-props').style.display='none';
+    return;
+  }
+  document.getElementById('no-sel-msg').style.display='none';
+  document.getElementById('cell-props').style.display='flex';
+  const [r,c]=state.selected;
+  const cd=state.cells[r][c];
+  document.getElementById('cell-addr').textContent=`R${r+1} C${c+1}`;
+  const sb=document.getElementById('span-badge');
+  if(cd.colspan>1||cd.rowspan>1){sb.textContent=`${cd.colspan}×${cd.rowspan}`;sb.style.display='';}
+  else sb.style.display='none';
+  document.getElementById('cell-content').value=cd.content;
+  document.getElementById('cell-width').value=cd.width||'';
+  document.getElementById('cell-height').value=cd.height||'';
+  document.getElementById('cell-padding').value=cd.padding||'6';
+  document.getElementById('cell-border-w').value=cd.borderWidth||'1';
+  document.getElementById('cell-border-style').value=cd.borderStyle||'solid';
+  document.getElementById('sel-align').value=cd.align||'left';
+  document.getElementById('sel-valign').value=cd.valign||'top';
+  document.getElementById('sel-fontsize').value=cd.fontsize||'14px';
+  document.getElementById('pick-bg').value=cd.bg||'#ffffff';
+  document.getElementById('pick-fg').value=cd.fg||'#000000';
+  document.getElementById('pick-border').value=cd.borderColor||'#888888';
+}
+
+function updateHtmlOutput(){
+  const tbl=document.querySelector('#tbl-container table');
+  if(!tbl){document.getElementById('html-out').textContent='';return;}
+  let html=tbl.outerHTML.replace(/<div class="resize-handle"[^>]*><\/div>/g,'').replace(/\s*contenteditable="[^"]*"/g,'').replace(/ data-row="[^"]*"/g,'').replace(/ data-col="[^"]*"/g,'').replace(/ class="[^"]*"/g,'');
+  function fmt(s){let out='',ind=0;s=s.replace(/></g,'>\n<');s.split('\n').forEach(l=>{l=l.trim();if(!l) return;if(l.startsWith('</')) ind=Math.max(0,ind-1);out+='  '.repeat(ind)+l+'\n';if(!l.startsWith('</') && !l.includes('</') && !l.endsWith('/>')) ind++;});return out;}
+  document.getElementById('html-out').textContent=fmt(html);
+}
+
+function copyHtml(){
+  const out=document.getElementById('html-out').textContent;
+  navigator.clipboard.writeText(out).then(()=>{
+    const btn=document.getElementById('btn-copy-html');
+    btn.innerHTML='<i class="ti ti-check"></i> Copied!';
+    setTimeout(()=>btn.innerHTML='<i class="ti ti-copy"></i> HTML',1500);
+  });
+}
+
+document.getElementById('btn-row-above').onclick=()=>addRow(false);
+document.getElementById('btn-row-below').onclick=()=>addRow(true);
+document.getElementById('btn-del-row').onclick=delRow;
+document.getElementById('btn-col-left').onclick=()=>addCol(false);
+document.getElementById('btn-col-right').onclick=()=>addCol(true);
+document.getElementById('btn-del-col').onclick=delCol;
+document.getElementById('btn-merge').onclick=mergeSelected;
+document.getElementById('btn-split-h').onclick=splitH;
+document.getElementById('btn-split-v').onclick=splitV;
+document.getElementById('btn-copy-html').onclick=copyHtml;
+document.getElementById('btn-copy-html2').onclick=copyHtml;
+document.getElementById('btn-clear').onclick=()=>{if(confirm('Clear all table data?')) initTable(state.rows,state.cols);};
+
+document.getElementById('sel-align').onchange=e=>applyToSelected('align',e.target.value);
+document.getElementById('sel-valign').onchange=e=>applyToSelected('valign',e.target.value);
+document.getElementById('sel-fontsize').onchange=e=>applyToSelected('fontsize',e.target.value);
+document.getElementById('pick-bg').onchange=e=>applyToSelected('bg',e.target.value);
+document.getElementById('pick-fg').onchange=e=>applyToSelected('fg',e.target.value);
+document.getElementById('pick-border').onchange=e=>{applyToSelected('borderColor',e.target.value);};
+document.getElementById('btn-bold').onclick=()=>{
+  if(!state.selected) return;
+  const cd=state.cells[state.selected[0]][state.selected[1]];
+  cd.fontweight=cd.fontweight==='bold'?'normal':'bold';
+  renderTable();
+};
+document.getElementById('btn-italic').onclick=()=>{
+  if(!state.selected) return;
+  const cd=state.cells[state.selected[0]][state.selected[1]];
+  cd.fontstyle=cd.fontstyle==='italic'?'normal':'italic';
+  renderTable();
+};
+document.getElementById('btn-header').onclick=()=>{
+  if(!state.selected) return;
+  const cd=state.cells[state.selected[0]][state.selected[1]];
+  cd.isHeader=!cd.isHeader;
+  renderTable();
+};
+
+document.getElementById('cell-content').addEventListener('input',e=>{
+  if(!state.selected) return;
+  state.cells[state.selected[0]][state.selected[1]].content=e.target.value;
+  renderTable();
+});
+['cell-width','cell-height','cell-padding','cell-border-w'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',e=>{
+    if(!state.selected) return;
+    const map={
+      'cell-width':'width','cell-height':'height',
+      'cell-padding':'padding','cell-border-w':'borderWidth'
+    };
+    state.cells[state.selected[0]][state.selected[1]][map[id]]=e.target.value;
+    renderTable();
+  });
+});
+document.getElementById('cell-border-style').onchange=e=>{
+  if(!state.selected) return;
+  state.cells[state.selected[0]][state.selected[1]].borderStyle=e.target.value;
+  renderTable();
+};
+
+document.querySelectorAll('.panel-tab').forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll('.panel-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    ['panel-cell','panel-table','panel-help'].forEach(id=>document.getElementById(id).style.display='none');
+    document.getElementById('panel-'+tab.dataset.tab).style.display='flex';
+  };
+});
+
+document.getElementById('btn-resize-table').onclick=()=>{
+  const r=Math.max(1,Math.min(20,+document.getElementById('tbl-rows').value||3));
+  const c=Math.max(1,Math.min(12,+document.getElementById('tbl-cols').value||4));
+  initTable(r,c);
+};
+
+document.getElementById('tbl-width').addEventListener('change',e=>{state.tableProps.width=e.target.value;renderTable();});
+document.getElementById('tbl-collapse').onchange=e=>{state.tableProps.collapse=e.target.value;renderTable();};
+document.getElementById('tbl-spacing').onchange=e=>{state.tableProps.spacing=e.target.value;renderTable();};
+document.getElementById('tbl-caption').addEventListener('input',e=>{state.tableProps.caption=e.target.value;renderTable();});
+
+const PRESETS={
+  simple:{},
+  striped:{rowFn:(r,cd)=>{if(r%2===0) cd.bg='#f5f7fa';}},
+  minimal:{border:{width:'0',color:'transparent'},header:{bg:'#f0f0f0'}},
+  dark:{header:{bg:'#1a1a2e',fg:'#ffffff',isHeader:true}}
+};
+
+document.getElementById('btn-apply-preset').onclick=()=>{
+  const p=document.getElementById('tbl-preset').value;
+  if(!p) return;
+  for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
+    const cd=state.cells[r][c];
+    cd.bg=''; cd.fg=''; cd.borderWidth='1'; cd.borderColor='#888888'; cd.borderStyle='solid';
+    if(p==='striped'&&r%2===1) cd.bg='#f0f4fa';
+    if(p==='minimal'){cd.borderWidth='0';cd.borderColor='transparent';}
+    if(p==='dark'&&r===0){cd.bg='#1a1a2e';cd.fg='#ffffff';cd.isHeader=true;cd.fontweight='500';}
+    if(p==='striped'&&r===0){cd.bg='#e8ecf4';cd.fontweight='500';}
+  }
+  renderTable();
+};
+
+initTable(4,5);
+document.getElementById('tbl-rows').value=4;
+document.getElementById('tbl-cols').value=5;
+</script>
