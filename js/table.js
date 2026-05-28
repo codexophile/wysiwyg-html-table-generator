@@ -47,7 +47,9 @@
     if (!cont) return;
     const tbl = document.createElement('table');
     const tp = state.tableProps;
-    tbl.style.cssText = `width:${tp.width || 'auto'};border-collapse:${tp.collapse};${tp.collapse === 'separate' ? 'border-spacing:' + tp.spacing + 'px' : ''}`;
+    if (!state.suppressInlineStyles) {
+      tbl.style.cssText = `width:${tp.width || 'auto'};border-collapse:${tp.collapse};${tp.collapse === 'separate' ? 'border-spacing:' + tp.spacing + 'px' : ''}`;
+    }
 
     if (tp.caption) {
       const cap = tbl.createCaption();
@@ -64,14 +66,16 @@
         cell.textContent = cd.content;
         if (cd.colspan > 1) cell.colSpan = cd.colspan;
         if (cd.rowspan > 1) cell.rowSpan = cd.rowspan;
-        let styleStr = `text-align:${cd.align};vertical-align:${cd.valign};font-size:${cd.fontsize};font-weight:${cd.fontweight};font-style:${cd.fontstyle};`;
-        if (cd.bg) styleStr += `background:${cd.bg};`;
-        if (cd.fg) styleStr += `color:${cd.fg};`;
-        if (cd.padding) styleStr += `padding:${cd.padding}px;`;
-        if (cd.width) styleStr += `width:${cd.width};`;
-        if (cd.height) styleStr += `height:${cd.height}px;`;
-        styleStr += `border:${cd.borderWidth}px ${cd.borderStyle} ${cd.borderColor};`;
-        cell.style.cssText = styleStr;
+        if (!state.suppressInlineStyles) {
+          let styleStr = `text-align:${cd.align};vertical-align:${cd.valign};font-size:${cd.fontsize};font-weight:${cd.fontweight};font-style:${cd.fontstyle};`;
+          if (cd.bg) styleStr += `background:${cd.bg};`;
+          if (cd.fg) styleStr += `color:${cd.fg};`;
+          if (cd.padding) styleStr += `padding:${cd.padding}px;`;
+          if (cd.width) styleStr += `width:${cd.width};`;
+          if (cd.height) styleStr += `height:${cd.height}px;`;
+          styleStr += `border:${cd.borderWidth}px ${cd.borderStyle} ${cd.borderColor};`;
+          cell.style.cssText = styleStr;
+        }
         cell.dataset.row = r;
         cell.dataset.col = c;
 

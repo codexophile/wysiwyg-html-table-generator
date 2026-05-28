@@ -6,6 +6,7 @@
     selected: null,
     selSet: new Set(),
     editing: null,
+    suppressInlineStyles: false,
     tableProps: {
       width: '100%',
       collapse: 'collapse',

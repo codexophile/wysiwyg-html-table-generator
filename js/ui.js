@@ -267,7 +267,9 @@
 
   // Auto-init when DOM ready
   document.addEventListener('DOMContentLoaded', () => {
+    state.suppressInlineStyles = true;
     initTable(4, 5);
+    state.suppressInlineStyles = false;
     UI.wireEvents();
   });
 })(window);
