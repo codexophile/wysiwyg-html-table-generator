@@ -79,6 +79,17 @@
   function wireEvents() {
     // Toolbar
     const byId = id => document.getElementById(id);
+    const bindLiveControl = (id, handler, eventTypes = ['input']) => {
+      const el = byId(id);
+      if (!el) return;
+      eventTypes.forEach(eventType => {
+        el.addEventListener(eventType, e => {
+          enableInlineStyles();
+          handler(e.target.value, e);
+        });
+      });
+    };
+
     if (byId('btn-row-above'))
       byId('btn-row-above').onclick = () => T.addRow(false);
     if (byId('btn-row-below'))
@@ -100,22 +111,18 @@
       };
 
     // Apply styles to selection
-    const applyMap = {
-      'sel-align': v => T.applyToSelected('align', v),
-      'sel-valign': v => T.applyToSelected('valign', v),
-      'sel-fontsize': v => T.applyToSelected('fontsize', v),
-      'pick-bg': v => T.applyToSelected('bg', v),
-      'pick-fg': v => T.applyToSelected('fg', v),
-      'pick-border': v => T.applyToSelected('borderColor', v),
-    };
-    Object.keys(applyMap).forEach(id => {
-      const el = byId(id);
-      if (!el) return;
-      el.onchange = e => {
-        enableInlineStyles();
-        applyMap[id](e.target.value);
-      };
-    });
+    bindLiveControl('sel-align', v => T.applyToSelected('align', v), [
+      'change',
+    ]);
+    bindLiveControl('sel-valign', v => T.applyToSelected('valign', v), [
+      'change',
+    ]);
+    bindLiveControl('sel-fontsize', v => T.applyToSelected('fontsize', v), [
+      'change',
+    ]);
+    bindLiveControl('pick-bg', v => T.applyToSelected('bg', v));
+    bindLiveControl('pick-fg', v => T.applyToSelected('fg', v));
+    bindLiveControl('pick-border', v => T.applyToSelected('borderColor', v));
 
     if (byId('btn-bold'))
       byId('btn-bold').onclick = () => {
@@ -143,39 +150,40 @@
       };
 
     // Cell props
-    const inputHandler = () => {
+    bindLiveControl('cell-content', v => {
       if (!state.selected) return;
-      const map = {
-        'cell-content': v =>
-          (state.cells[state.selected[0]][state.selected[1]].content = v),
-        'cell-width': v =>
-          (state.cells[state.selected[0]][state.selected[1]].width = v),
-        'cell-height': v =>
-          (state.cells[state.selected[0]][state.selected[1]].height = v),
-        'cell-padding': v =>
-          (state.cells[state.selected[0]][state.selected[1]].padding = v),
-        'cell-border-w': v =>
-          (state.cells[state.selected[0]][state.selected[1]].borderWidth = v),
-      };
-      Object.keys(map).forEach(id => {
-        const el = byId(id);
-        if (!el) return;
-        el.addEventListener('change', e => {
-          enableInlineStyles();
-          map[id](e.target.value);
-          T.renderTable();
-        });
-      });
-    };
-    inputHandler();
-    if (byId('cell-border-style'))
-      byId('cell-border-style').onchange = e => {
+      state.cells[state.selected[0]][state.selected[1]].content = v;
+      T.renderTable();
+    });
+    bindLiveControl('cell-width', v => {
+      if (!state.selected) return;
+      state.cells[state.selected[0]][state.selected[1]].width = v;
+      T.renderTable();
+    });
+    bindLiveControl('cell-height', v => {
+      if (!state.selected) return;
+      state.cells[state.selected[0]][state.selected[1]].height = v;
+      T.renderTable();
+    });
+    bindLiveControl('cell-padding', v => {
+      if (!state.selected) return;
+      state.cells[state.selected[0]][state.selected[1]].padding = v;
+      T.renderTable();
+    });
+    bindLiveControl('cell-border-w', v => {
+      if (!state.selected) return;
+      state.cells[state.selected[0]][state.selected[1]].borderWidth = v;
+      T.renderTable();
+    });
+    bindLiveControl(
+      'cell-border-style',
+      v => {
         if (!state.selected) return;
-        enableInlineStyles();
-        state.cells[state.selected[0]][state.selected[1]].borderStyle =
-          e.target.value;
+        state.cells[state.selected[0]][state.selected[1]].borderStyle = v;
         T.renderTable();
-      };
+      },
+      ['change'],
+    );
 
     // Tabs
     document.querySelectorAll('.panel-tab').forEach(tab => {
@@ -200,30 +208,26 @@
         initTable(r, c);
       };
 
-    if (byId('tbl-width'))
-      byId('tbl-width').addEventListener('change', e => {
-        enableInlineStyles();
-        state.tableProps.width = e.target.value;
+    bindLiveControl('tbl-width', v => {
+      state.tableProps.width = v;
+      T.renderTable();
+    });
+    bindLiveControl(
+      'tbl-collapse',
+      v => {
+        state.tableProps.collapse = v;
         T.renderTable();
-      });
-    if (byId('tbl-collapse'))
-      byId('tbl-collapse').onchange = e => {
-        enableInlineStyles();
-        state.tableProps.collapse = e.target.value;
-        T.renderTable();
-      };
-    if (byId('tbl-spacing'))
-      byId('tbl-spacing').onchange = e => {
-        enableInlineStyles();
-        state.tableProps.spacing = e.target.value;
-        T.renderTable();
-      };
-    if (byId('tbl-caption'))
-      byId('tbl-caption').addEventListener('input', e => {
-        enableInlineStyles();
-        state.tableProps.caption = e.target.value;
-        T.renderTable();
-      });
+      },
+      ['change'],
+    );
+    bindLiveControl('tbl-spacing', v => {
+      state.tableProps.spacing = v;
+      T.renderTable();
+    });
+    bindLiveControl('tbl-caption', v => {
+      state.tableProps.caption = v;
+      T.renderTable();
+    });
 
     if (byId('btn-apply-preset'))
       byId('btn-apply-preset').onclick = () => {
