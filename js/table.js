@@ -312,16 +312,17 @@
         if (cc === c) continue;
         const oc = state.cells[r][cc];
         if (oc.rowspan > 1) {
-          const nc = state.cells[r + 1][cc];
-          nc.rowspan = 0;
+          // extend the existing vertical span to cover the new row
           oc.rowspan++;
         }
       }
     } else {
+      // shrink the rowspan of the selected cell and reset the
+      // cells that become independent after the split
       cd.rowspan--;
       const tr = r + cd.rowspan;
       for (let cc = c; cc < c + cd.colspan; cc++)
-        state.cells[tr][cc].content = '';
+        state.cells[tr][cc] = global.App.makeCellData(tr, cc);
     }
     renderTable();
   }
@@ -349,7 +350,12 @@
         if (oc.colspan > 1) oc.colspan++;
       }
     } else {
+      // shrink the colspan of the selected cell and reset the
+      // cells that become independent after the split
       cd.colspan--;
+      const tc = c + cd.colspan;
+      for (let rr = r; rr < r + cd.rowspan; rr++)
+        state.cells[rr][tc] = global.App.makeCellData(rr, tc);
     }
     renderTable();
   }
