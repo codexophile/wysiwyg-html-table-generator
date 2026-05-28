@@ -113,6 +113,9 @@
     if (window.UI && typeof window.UI.updateSidePanel === 'function') {
       window.UI.updateSidePanel();
     }
+    if (window.App && typeof window.App.saveState === 'function') {
+      window.App.saveState();
+    }
   }
 
   // Drag / resize state belongs to this module

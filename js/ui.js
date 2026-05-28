@@ -383,8 +383,12 @@
 
   // Auto-init when DOM ready
   document.addEventListener('DOMContentLoaded', () => {
-    // preserveNoStyles is true by default; init without inline styles
-    initTable(4, 5);
+    // Restore the last saved table when available, otherwise start fresh.
+    if (window.App && typeof window.App.bootstrapTable === 'function') {
+      window.App.bootstrapTable();
+    } else {
+      initTable(4, 5);
+    }
     UI.wireEvents();
   });
 })(window);
